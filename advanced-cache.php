@@ -342,6 +342,8 @@ if ((isset($_SERVER['REQUEST_METHOD']) && !in_array($_SERVER['REQUEST_METHOD'], 
 	return;
 }
 
+$is_head = ('HEAD' === $_SERVER['REQUEST_METHOD']);
+
 // Never batcache when cookies indicate a cache-exempt visitor.
 if ( is_array( $_COOKIE) && ! empty( $_COOKIE ) ) {
 	foreach ( array_keys( $_COOKIE ) as $batcache->cookie ) {
@@ -408,6 +410,11 @@ $batcache->keys = array(
 	'extra' => $batcache->unique
 );
 
+if ( $is_head ) {
+	// HEAD request responses should use the cached content of the GET request
+	$batcache->keys['method'] = 'GET';
+}
+
 if ( $batcache->is_ssl() )
 	$batcache->keys['ssl'] = true;
 
@@ -421,6 +428,12 @@ $batcache->generate_keys();
 
 // Get the batcache
 $batcache->cache = wp_cache_get($batcache->key, $batcache->group);
+
+if ( $is_head ) {
+	// revert cache key in case no cache entry was found and it gets regenerated
+	$batcache->keys['method'] = 'HEAD';
+	$batcache->generate_keys();
+}
 
 if ( isset( $batcache->cache['version'] ) && $batcache->cache['version'] != $batcache->url_version ) {
 	// Always refresh the cache if a newer version is available.
@@ -530,6 +543,11 @@ if ( isset( $batcache->cache['time'] ) && // We have cache
 		header($batcache->cache['status_header'], true);
 
 	batcache_stats( 'batcache', 'total_cached_views' );
+
+	if ( $is_head ) {
+		// HEAD request should not output the body
+		die();
+	}
 
 	// Have you ever heard a death rattle before?
 	die($batcache->cache['output']);
