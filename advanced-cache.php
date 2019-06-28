@@ -443,7 +443,7 @@ if ( isset( $batcache->cache['version'] ) && $batcache->cache['version'] != $bat
 	$batcache->do = true;
 } else {
 	// No batcache item found, or ready to sample traffic again at the end of the batcache life?
-	if ( !is_array($batcache->cache) || time() >= $batcache->cache['time'] + $batcache->max_age - $batcache->seconds ) {
+	if ( !is_array($batcache->cache) || time() >= $batcache->cache['time'] + $batcache->cache['max_age'] - $batcache->seconds ) {
 		wp_cache_add($batcache->req_key, 0, $batcache->group);
 		$batcache->requests = wp_cache_incr($batcache->req_key, 1, $batcache->group);
 
